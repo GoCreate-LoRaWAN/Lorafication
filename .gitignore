@@ -1,3 +1,4 @@
-bin/
+bin
+.idea
 env.json
 .DS_Store
