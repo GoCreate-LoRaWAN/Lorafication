@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/george-e-shaw-iv/lorafication/internal/platform/duration"
+	"github.com/22arw/lorafication/internal/platform/duration"
 	"gopkg.in/yaml.v3"
 )
 
