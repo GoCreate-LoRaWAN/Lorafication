@@ -6,26 +6,29 @@ import (
 	"net/http"
 	"runtime"
 
-	"github.com/george-e-shaw-iv/lorafication/cmd/loraficationd/config"
-	"github.com/george-e-shaw-iv/lorafication/internal/platform/web"
+	"github.com/22arw/lorafication/cmd/loraficationd/config"
+	"github.com/22arw/lorafication/internal/platform/web"
+	"github.com/jmoiron/sqlx"
 	"github.com/julienschmidt/httprouter"
 	"go.uber.org/zap"
 )
 
 // Server implements http.Handler and handles incoming HTTP connections.
 type Server struct {
-	Config *config.Config
-	Logger *zap.Logger
+	config *config.Config
+	logger *zap.Logger
+	dbc    *sqlx.DB
 
 	http.Handler
 }
 
 // NewServer returns a reference to a Server type with the fields and handlers properly
 // set.
-func NewServer(cfg *config.Config, logger *zap.Logger) *Server {
+func NewServer(cfg *config.Config, logger *zap.Logger, dbc *sqlx.DB) *Server {
 	s := Server{
-		Config: cfg,
-		Logger: logger,
+		config: cfg,
+		logger: logger,
+		dbc:    dbc,
 	}
 
 	r := httprouter.New()
@@ -51,26 +54,36 @@ func (s *Server) boilerplate(r *httprouter.Router) {
 		stack := make([]byte, 4096)
 		stack = stack[:runtime.Stack(stack, false)]
 
-		s.Logger.Error("captured http panic",
+		s.logger.Error("captured http panic",
 			zap.Reflect("panic", i), zap.String("stack", string(stack)))
 
-		web.RespondError(w, r, s.Logger, http.StatusInternalServerError,
+		web.RespondError(w, r, s.logger, http.StatusInternalServerError,
 			errors.New(http.StatusText(http.StatusInternalServerError)))
 	}
 
 	// Not found (404) handler being overridden for logging purposes. This helps distinguish 404s
 	// due to resources not being found from unregistered routes being reached in terms of logging.
 	r.NotFound = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		s.Logger.Error("unregistered route attempting to be reached",
+		s.logger.Error("unregistered route attempting to be reached",
 			zap.String("requestURI", r.RequestURI))
 
-		web.RespondError(w, r, s.Logger, http.StatusNotFound, errors.New(http.StatusText(http.StatusNotFound)))
+		web.RespondError(w, r, s.logger, http.StatusNotFound, errors.New(http.StatusText(http.StatusNotFound)))
 	})
 
-	// probeHandler for kubernetes probes. Right now the logic is non-existent and indistinguishable
-	// for the ready and healthy handlers, but eventually there is a chance it will not be.
+	// probeHandler is for kubernetes probes.
 	probeHandler := func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
+		if err := s.dbc.Ping(); err == nil {
+
+			// Ping by itself is un-reliable, the connections are cached. This
+			// ensures that the database is still running by executing a harmless
+			// dummy query against it.
+			if _, err = s.dbc.Exec("SELECT true"); err == nil {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+		}
+
+		w.WriteHeader(http.StatusInternalServerError)
 	}
 
 	// Routes for Kubernetes probes.

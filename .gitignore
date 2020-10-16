@@ -1,4 +1,11 @@
+# Binary Folder
 bin
+
+# Vendored Dependencies Folder
+vendor
+
+# Generated Jetbrains Directory Metadata
 .idea
-env.json
+
+# Generated OSX Directory Metadata
 .DS_Store
