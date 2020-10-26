@@ -7,6 +7,7 @@ import (
 	"runtime"
 
 	"github.com/22arw/lorafication/cmd/loraficationd/config"
+	"github.com/22arw/lorafication/internal/mail"
 	"github.com/22arw/lorafication/internal/platform/web"
 	"github.com/jmoiron/sqlx"
 	"github.com/julienschmidt/httprouter"
@@ -18,17 +19,19 @@ type Server struct {
 	config *config.Config
 	logger *zap.Logger
 	dbc    *sqlx.DB
+	mailer *mail.Mailer
 
 	http.Handler
 }
 
 // NewServer returns a reference to a Server type with the fields and handlers properly
 // set.
-func NewServer(cfg *config.Config, logger *zap.Logger, dbc *sqlx.DB) *Server {
+func NewServer(cfg *config.Config, logger *zap.Logger, dbc *sqlx.DB, mailer *mail.Mailer) *Server {
 	s := Server{
 		config: cfg,
 		logger: logger,
 		dbc:    dbc,
+		mailer: mailer,
 	}
 
 	r := httprouter.New()
