@@ -12,6 +12,7 @@ import (
 
 	"github.com/22arw/lorafication/cmd/loraficationd/config"
 	"github.com/22arw/lorafication/cmd/loraficationd/server"
+	"github.com/22arw/lorafication/internal/mail"
 	"github.com/22arw/lorafication/internal/platform/db"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -91,6 +92,9 @@ func main() {
 			zap.String("dbName", cfg.DBName),
 			zap.String("dbHost", cfg.DBHost),
 			zap.Int("dbPort", cfg.DBPort),
+			zap.String("smtpHost", cfg.SMTPHost),
+			zap.Int("smtpPort", cfg.SMTPPort),
+			zap.String("smtpUser", cfg.SMTPUser),
 			zap.Duration("readTimeout", cfg.ReadTimeout.Duration),
 			zap.Duration("writeTimeout", cfg.WriteTimeout.Duration),
 			zap.Duration("shutdownTimeout", cfg.ShutdownTimeout.Duration))
@@ -120,10 +124,13 @@ func main() {
 		}
 	}()
 
+	// Configure the mailer used to send emails over SMTP.
+	mailer := mail.NewMailer(cfg.SMTPHost, cfg.SMTPPort, cfg.SMTPUser, cfg.SMTPPass)
+
 	// Configure the HTTP server that this daemon will expose.
 	api := http.Server{
 		Addr:         fmt.Sprintf("localhost:%d", cfg.Port),
-		Handler:      server.NewServer(&cfg, logger, dbc),
+		Handler:      server.NewServer(&cfg, logger, dbc, mailer),
 		ReadTimeout:  cfg.ReadTimeout.Duration,
 		WriteTimeout: cfg.WriteTimeout.Duration,
 	}

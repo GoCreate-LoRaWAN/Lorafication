@@ -44,6 +44,12 @@ statements. See the [zap documentation](https://godoc.org/go.uber.org/zap/zapcor
 `db`).
 - `LORAFICATION_DB_PORT`: The postgres database port that gets used within the postgres connection string (Default:
 `5432`).
+- `LORAFICATION_SMTP_HOST`: The SMTP server's host address to connect to in order to send emails
+(Default: `smtp.gmail.com`).
+- `LORAFICATION_SMTP_PORT`: The SMTP server's port to use in conjunction with the host address to connect to in order to
+send emails (Default: `587`)
+- `LORAFICATION_SMTP_USER`: The username to use when connecting to the SMTP server (Default: n/a).
+- `LORAFICATION_SMTP_PASS`: The password to use when connecting to the SMTP server (Default: n/a).
 - `LORAFICATION_READ_TIMEOUT`: The time of the read timeout of any outgoing read requests made by the internal HTTP
 server (Default: `10s`).
 - `LORAFICATION_WRITE_TIMEOUT`: The time of the read timeout of any outgoing write requests made by the internal HTTP
@@ -71,6 +77,10 @@ JSON:
     "dbName": "lorafication",
     "dbHost": "db",
     "dbPort": 5432,
+    "smtpHost": "smtp.gmail.com",
+    "smtpPort": 587,
+    "smtpUser": "<no default>",
+    "smtpPass": "<no default>",
     "readTimeout": "10s",
     "writeTimeout": "20s",
     "shutdownTimeout": "20s"
@@ -86,6 +96,10 @@ dbPass: root
 dbName: lorafication
 dbHost: db
 dbPort: 5432
+smtpHost: smtp.gmail.com
+smtpPort: 587
+smtpUser: <no default>
+smtpPass: <no default>
 readTimeout: 10s
 writeTimeout: 20s
 shutdownTimeout: 20s

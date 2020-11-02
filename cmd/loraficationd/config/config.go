@@ -40,6 +40,14 @@ const (
 	// DefaultDBPort is the default value of the DBPort struct field on the Config type.
 	DefaultDBPort = 5432
 
+	// DefaultSMTPHost is the default value of the SMTPHost struct field on the Config
+	// type.
+	DefaultSMTPHost = "smtp.gmail.com"
+
+	// DefaultSMTPPort is the default value of the SMTPPort struct field on the Config
+	// type.
+	DefaultSMTPPort = 587
+
 	// DefaultReadTimeout is the default value of the ReadTimeout struct field on the
 	// Config type.
 	DefaultReadTimeout = 10 * time.Second
@@ -64,6 +72,11 @@ type Config struct {
 	DBName string `json:"dbName" yaml:"dbName" envconfig:"DB_NAME"`
 	DBHost string `json:"dbHost" yaml:"dbHost" envconfig:"DB_HOST"`
 	DBPort int    `json:"dbPort" yaml:"dbPort" envconfig:"DB_PORT"`
+
+	SMTPHost string `json:"smtpHost" yaml:"smtpHost" envconfig:"SMTP_HOST"`
+	SMTPPort int    `json:"smtpPort" yaml:"smtpPort" envconfig:"SMTP_PORT"`
+	SMTPUser string `json:"smtpUser" yaml:"smtpUser" envconfig:"SMTP_USER"`
+	SMTPPass string `json:"smtpPass" yaml:"smtpPass" envconfig:"SMTP_PASS"`
 
 	ReadTimeout     duration.Duration `json:"readTimeout" yaml:"readTimeout" envconfig:"READ_TIMEOUT"`
 	WriteTimeout    duration.Duration `json:"writeTimeout" yaml:"writeTimeout" envconfig:"WRITE_TIMEOUT"`
@@ -146,6 +159,14 @@ func (c *Config) Defaults() {
 		c.DBPort = DefaultDBPort
 	}
 
+	if c.SMTPHost == "" {
+		c.SMTPHost = DefaultSMTPHost
+	}
+
+	if c.SMTPPort == 0 {
+		c.SMTPPort = DefaultSMTPPort
+	}
+
 	if c.ReadTimeout.IsEmpty() {
 		c.ReadTimeout.Duration = DefaultReadTimeout
 	}
@@ -188,6 +209,22 @@ func (c *Config) Validate() error {
 
 	if c.DBPort <= 0 {
 		return errors.New("db port must be > 0 ")
+	}
+
+	if c.SMTPHost == "" {
+		return errors.New("smtp host must be defined")
+	}
+
+	if c.SMTPPort <= 0 {
+		return errors.New("smtp port must be > 0")
+	}
+
+	if c.SMTPUser == "" {
+		return errors.New("smtp user must be defined")
+	}
+
+	if c.SMTPPass == "" {
+		return errors.New("smtp pass must be defined")
 	}
 
 	if c.ReadTimeout.IsEmpty() {
