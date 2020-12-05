@@ -12,6 +12,7 @@ import (
 // Mailer is a type that holds the SMTP auth, ready to send email using it's receiver
 // functions after proper initialization using NewMailer.
 type Mailer struct {
+	addr string
 	auth smtp.Auth
 	from string
 }
@@ -20,8 +21,9 @@ type Mailer struct {
 // authentication.
 func NewMailer(host string, port int, user, pass string) *Mailer {
 	return &Mailer{
+		addr: fmt.Sprintf("%s:%d", host, port),
 		from: user,
-		auth: smtp.PlainAuth("", user, pass, fmt.Sprintf("%s:%d", host, port)),
+		auth: smtp.PlainAuth("", user, pass, host),
 	}
 }
 
@@ -63,5 +65,5 @@ func (m *Mailer) Send(to, subject, msg string) error {
 	// Add headers to body.
 	finalBody := m.DefaultHeaders(to, subject) + "\r\n" + body.String()
 
-	return smtp.SendMail(to, m.auth, m.from, []string{to}, []byte(finalBody))
+	return smtp.SendMail(m.addr, m.auth, m.from, []string{to}, []byte(finalBody))
 }

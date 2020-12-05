@@ -22,16 +22,16 @@ type Node struct {
 // ResolveNode takes an ID and finds the corresponding row in the nodes table
 // and returns it.
 func ResolveNode(dbc *sqlx.DB, id int) (*Node, error) {
-	stmt, err := dbc.Prepare("SELECT * FROM nodes WHERE id=$1")
+	stmt, err := dbc.Preparex("SELECT * FROM nodes WHERE id=$1")
 	if err != nil {
 		return nil, fmt.Errorf("prepare statement: %w", err)
 	}
 	defer stmt.Close()
 
-	row := stmt.QueryRow(id)
+	row := stmt.QueryRowx(id)
 
 	var node Node
-	if err := row.Scan(&node); err != nil {
+	if err := row.StructScan(&node); err != nil {
 		return nil, fmt.Errorf("retrieve record from table: %w", err)
 	}
 

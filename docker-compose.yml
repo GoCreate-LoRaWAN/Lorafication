@@ -1,14 +1,12 @@
 version: '3'
 
-networks:
-  lorafication:
-    driver: bridge
-
 services:
   loraficationd:
     build:
       context: .
       dockerfile: ./cmd/loraficationd/deploy/Dockerfile
+    ports:
+      - "9000:9000"
     environment:
       - LORAFICATION_LOG_LEVEL
       - LORAFICATION_PORT
@@ -24,13 +22,9 @@ services:
       - LORAFICATION_READ_TIMEOUT
       - LORAFICATION_WRITE_TIMEOUT
       - LORAFICATION_SHUTDOWN_TIMEOUT
-    ports:
-      - "9000:9000"
     depends_on:
       - db
     restart: on-failure
-    networks:
-      - lorafication
   db:
     image: postgres:13.0
     ports:
@@ -42,5 +36,3 @@ services:
       POSTGRES_PASSWORD: root
       POSTGRES_DB: lorafication
     restart: on-failure
-    networks:
-      - lorafication

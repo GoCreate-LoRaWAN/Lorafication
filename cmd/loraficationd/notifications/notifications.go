@@ -23,21 +23,26 @@ type Contract struct {
 // ResolveContracts takes a nodeID and resolves all of the contracts stored in the
 // database associated with this node ID in the notification_contracts table.
 func ResolveContracts(dbc *sqlx.DB, nodeID int) ([]Contract, error) {
-	stmt, err := dbc.Prepare("SELECT * FROM notification_contracts WHERE node_id=$1")
+	stmt, err := dbc.Preparex("SELECT * FROM notification_contracts WHERE node_id=$1")
 	if err != nil {
 		return nil, fmt.Errorf("prepare statement to get notification contracts: %w", err)
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.Query(nodeID)
+	rows, err := stmt.Queryx(nodeID)
 	if err != nil {
 		return nil, fmt.Errorf("query database for notification contracts: %w", err)
 	}
 	defer rows.Close()
 
+	var contract Contract
 	var contracts []Contract
-	if err := rows.Scan(&contracts); err != nil {
-		return nil, fmt.Errorf("scan rows: %w", err)
+
+	for rows.Next() {
+		if err := rows.StructScan(&contract); err != nil {
+			return nil, fmt.Errorf("scan row: %w", err)
+		}
+		contracts = append(contracts, contract)
 	}
 
 	return contracts, nil

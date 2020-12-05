@@ -30,7 +30,7 @@ func init() {
 	// Register the collection of the -envFile="" flag if it was passed to the binary.
 	flag.StringVar(&flagEnvFile, "envFile", "", "the path of a JSON or YAML file that contains configuration variables, if not supplied the configuration will be collected from the environment.")
 
-	// Register the collection of the -verbose flagif it was passed to the binary.
+	// Register the collection of the -verbose flag if it was passed to the binary.
 	flag.BoolVar(&flagVerbose, "verbose", false, "display verbose information")
 
 	// Collect all registered CLI flags.
@@ -51,13 +51,15 @@ func main() {
 	// depending on whether or not the -envFile="" flag was specified.
 	if flagEnvFile != "" {
 		if cfg, err = config.FromFile(flagEnvFile); err != nil {
+			log.Printf("collect config from file: %v", err)
 			exitCode = 1
-			log.Fatalf("collect config from file: %v", err)
+			return
 		}
 	} else {
 		if cfg, err = config.FromEnvironment(); err != nil {
+			log.Printf("collect config from environment: %v", err)
 			exitCode = 1
-			log.Fatalf("collect config from environment: %v", err)
+			return
 		}
 	}
 
@@ -129,7 +131,7 @@ func main() {
 
 	// Configure the HTTP server that this daemon will expose.
 	api := http.Server{
-		Addr:         fmt.Sprintf("localhost:%d", cfg.Port),
+		Addr:         fmt.Sprintf(":%d", cfg.Port),
 		Handler:      server.NewServer(&cfg, logger, dbc, mailer),
 		ReadTimeout:  cfg.ReadTimeout.Duration,
 		WriteTimeout: cfg.WriteTimeout.Duration,
