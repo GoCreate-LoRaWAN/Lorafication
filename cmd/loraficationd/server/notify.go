@@ -7,18 +7,19 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/22arw/lorafication/cmd/loraficationd/nodes"
-	"github.com/22arw/lorafication/cmd/loraficationd/notifications"
+	"github.com/22arw/lorafication/cmd/loraficationd/contract"
+	"github.com/22arw/lorafication/cmd/loraficationd/node"
 	"github.com/22arw/lorafication/internal/platform/web"
 )
 
-// NotifyRequest contains the structure of the request data for the notify route.
+// NotifyRequest is a representation of the request body for the *Server.Notify handler.
 type NotifyRequest struct {
-	NodeID  int    `json:"nodeID"`
-	Message string `json:"message"`
+	PublicKey string `json:"publicKey"` // PublicKey corresponds to a node public key (primary key of a node).
+	Secret    string `json:"secret"`    // Secret corresponds to the secret stored in the same row^.
+	Message   string `json:"message"`
 }
 
-// Notify handles the /notify endpoint to notify all entities subscribed to a node.
+// Notify notifies all entities subscribed to a node using the provided message.
 func (s *Server) Notify(w http.ResponseWriter, r *http.Request) {
 	var reqData NotifyRequest
 	if err := json.NewDecoder(r.Body).Decode(&reqData); err != nil {
@@ -26,18 +27,18 @@ func (s *Server) Notify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	node, err := nodes.ResolveNode(s.dbc, reqData.NodeID)
+	n, err := node.AuthenticateNode(r.Context(), s.dbc, reqData.PublicKey, reqData.Secret)
 	if err != nil {
 		statusCode := http.StatusInternalServerError
 		if errors.Is(err, sql.ErrNoRows) {
-			statusCode = http.StatusNotFound
+			statusCode = http.StatusUnauthorized
 		}
 
-		web.RespondError(w, r, s.logger, statusCode, fmt.Errorf("resolve node from id: %w", err))
+		web.RespondError(w, r, s.logger, statusCode, fmt.Errorf("resolve node from public key and secret: %w", err))
 		return
 	}
 
-	contracts, err := notifications.ResolveContracts(s.dbc, reqData.NodeID)
+	contracts, err := contract.ResolveContracts(r.Context(), s.dbc, reqData.PublicKey)
 	if err != nil {
 		statusCode := http.StatusInternalServerError
 		if errors.Is(err, sql.ErrNoRows) {
@@ -48,7 +49,7 @@ func (s *Server) Notify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	subject := fmt.Sprintf("LoRafication: Notification from %s Node", node.Name)
+	subject := fmt.Sprintf("LoRafication: Notification from %s Node", n.Name)
 	for i := range contracts {
 		if contracts[i].Email != nil {
 			if err := s.mailer.Send(*contracts[i].Email, subject, reqData.Message); err != nil {
