@@ -39,6 +39,15 @@ func NewServer(cfg *config.Config, logger *zap.Logger, dbc *sqlx.DB, mailer *mai
 	// Boilerplate Routes
 	s.boilerplate(r)
 
+	// Entity Routes
+	r.HandlerFunc(http.MethodPost, "/entity", s.CreateEntity)
+
+	// Node Routes
+	r.HandlerFunc(http.MethodPost, "/node", s.CreateNode)
+
+	// Node/Entity Contract Routes
+	r.HandlerFunc(http.MethodPost, "/contract", s.CreateContract)
+
 	// Notification Routes
 	r.HandlerFunc(http.MethodPost, "/notify", s.Notify)
 
